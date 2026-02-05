@@ -1,0 +1,152 @@
+{
+  "name": "GitHub → n8n → Jira → Jenkins (Config Deploy)",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "config-change",
+        "httpMethod": "POST",
+        "responseMode": "onReceived",
+        "responseData": "ok"
+      },
+      "id": "webhook-node",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -1400,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": true,
+        "values": {
+          "string": [
+            {
+              "name": "repository",
+              "value": "={{ $json.repository }}"
+            },
+            {
+              "name": "branch",
+              "value": "={{ $json.branch }}"
+            },
+            {
+              "name": "actor",
+              "value": "={{ $json.actor }}"
+            },
+            {
+              "name": "changed_files",
+              "value": "={{ $json.changed_files }}"
+            },
+            {
+              "name": "environment",
+              "value": "={{ $json.environment || 'nonprod' }}"
+            }
+          ]
+        }
+      },
+      "id": "set-node",
+      "name": "Normalize Payload",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        -1180,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "issue",
+        "operation": "create",
+        "project": "CONF",
+        "issueType": "Task",
+        "summary": "=Config change detected in {{$json.repository}}",
+        "description": "=Branch: {{$json.branch}}\nActor: {{$json.actor}}\nFiles: {{$json.changed_files}}\nEnvironment: {{$json.environment}}"
+      },
+      "id": "jira-node",
+      "name": "Create Jira Issue",
+      "type": "n8n-nodes-base.jira",
+      "typeVersion": 1,
+      "position": [
+        -900,
+        100
+      ],
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "JIRA_CREDENTIAL_ID",
+          "name": "Jira Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "basicAuth",
+        "job": "config-deploy",
+        "parameters": {
+          "parameter": [
+            {
+              "name": "ENVIRONMENT",
+              "value": "={{ $json.environment }}"
+            },
+            {
+              "name": "CHANGED_FILES",
+              "value": "={{ $json.changed_files }}"
+            }
+          ]
+        }
+      },
+      "id": "jenkins-node",
+      "name": "Trigger Jenkins Job",
+      "type": "n8n-nodes-base.jenkins",
+      "typeVersion": 1,
+      "position": [
+        -600,
+        100
+      ],
+      "credentials": {
+        "jenkinsApi": {
+          "id": "JENKINS_CREDENTIAL_ID",
+          "name": "Jenkins Account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Payload": {
+      "main": [
+        [
+          {
+            "node": "Create Jira Issue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Jira Issue": {
+      "main": [
+        [
+          {
+            "node": "Trigger Jenkins Job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "id": "config-workflow"
+}
