@@ -31,4 +31,4 @@ jobs:
               "actor": "${{ github.actor }}",
               "changed_files": "${{ steps.changes.outputs.files }}"
             }' \
-            http://27.7.212.82:30678/webhook/config-change
+            https://penetralian-denna-unspired.ngrok-free.dev/webhook/config-change
