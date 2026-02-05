@@ -31,4 +31,4 @@ jobs:
               "actor": "${{ github.actor }}",
               "changed_files": "${{ steps.changes.outputs.files }}"
             }' \
-            http://my-n8n.default.svc.cluster.local/webhook/config-change
+            http://27.7.212.82:30678/webhook/config-change
