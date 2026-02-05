@@ -38,17 +38,20 @@ jobs:
 
       - name: Trigger n8n webhook
         run: |
-          COMMIT_SHA=$(git rev-parse --short HEAD)
-          COMMIT_MSG=$(git log -1 --pretty=%B)
-          AUTHOR=$(git log -1 --pretty=%an)
-          FILES="${{ steps.files.outputs.files }}"
+            COMMIT_SHA=$(git rev-parse --short HEAD)
+            COMMIT_MSG=$(git log -1 --pretty=%B)
+            AUTHOR=$(git log -1 --pretty=%an)
+            
+            # Convert multiline file list into JSON array
+            FILES_JSON=$(echo "${{ steps.files.outputs.files }}" | jq -R -s -c 'split("\n") | map(select(length > 0))')
+        
+            curl -X POST "https://penetralian-denna-unspired.ngrok-free.dev/webhook/config-change" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "commit_sha": "'"$COMMIT_SHA"'",
+                "commit_message": "'"$COMMIT_MSG"'",
+                "author": "'"$AUTHOR"'",
+                "repository": "'"${{ github.repository }}"'",
+                "files": '"$FILES_JSON"'
+              }'
 
-          curl -X POST "https://penetralian-denna-unspired.ngrok-free.dev/webhook/config-change" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "commit_sha": "'"$COMMIT_SHA"'",
-              "commit_message": "'"$COMMIT_MSG"'",
-              "author": "'"$AUTHOR"'",
-              "repository": "'"${{ github.repository }}"'",
-              "files": "'"$FILES"'"
-            }'
