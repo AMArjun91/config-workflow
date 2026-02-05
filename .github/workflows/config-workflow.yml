@@ -1,4 +1,4 @@
-name: Config Workflow Trigger
+name: Config Change → n8n
 
 on:
   push:
@@ -7,20 +7,28 @@ on:
     paths:
       - 'main/config/**'
 
-  pull_request:
-    branches:
-      - main
-    paths:
-      - 'main/config/**'
-
 jobs:
-  detect-config-change:
+  notify-n8n:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Confirm config change
+      - name: Get changed files
+        id: changes
         run: |
-          echo "✅ Change detected under main/config/"
+          echo "files=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | tr '\n' ',')" >> $GITHUB_OUTPUT
+
+      - name: Call n8n webhook
+        run: |
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -d '{
+              "repository": "${{ github.repository }}",
+              "branch": "${{ github.ref_name }}",
+              "commit": "${{ github.sha }}",
+              "actor": "${{ github.actor }}",
+              "changed_files": "${{ steps.changes.outputs.files }}"
+            }' \
+            http://my-n8n.default.svc.cluster.local/webhook/config-change
