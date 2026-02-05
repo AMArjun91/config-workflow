@@ -1,0 +1,26 @@
+name: Config Workflow Trigger
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'main/config/**'
+
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'main/config/**'
+
+jobs:
+  detect-config-change:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Confirm config change
+        run: |
+          echo "✅ Change detected under main/config/"
