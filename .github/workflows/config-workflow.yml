@@ -23,7 +23,7 @@ jobs:
       - name: Get changed files
         id: files
         run: |
-          CHANGED=$(git diff --name-only HEAD^ HEAD | grep '^schemas/' || echo "")
+          CHANGED=$(git diff --name-only HEAD^ HEAD | grep '^config/' || echo "")
           if [ -z "$CHANGED" ]; then
             echo "No schema files changed"
             exit 0
