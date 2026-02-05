@@ -23,26 +23,32 @@ jobs:
       - name: Get changed files
         id: files
         run: |
-          CHANGED=$(git diff --name-only HEAD^ HEAD | grep '^config/' || echo "")
+          # Get list of changed files under config/
+          CHANGED=$(git diff --name-only HEAD^ HEAD | grep '^config/' || true)
+
           if [ -z "$CHANGED" ]; then
             echo "No schema files changed"
             exit 0
           fi
-          echo "files=$CHANGED" >> $GITHUB_OUTPUT
+
+          # Properly set multiline output
+          echo "files<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGED" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Trigger n8n webhook
         run: |
           COMMIT_SHA=$(git rev-parse --short HEAD)
           COMMIT_MSG=$(git log -1 --pretty=%B)
           AUTHOR=$(git log -1 --pretty=%an)
-          FILES='${{ steps.files.outputs.files }}'
-          
+          FILES="${{ steps.files.outputs.files }}"
+
           curl -X POST "https://penetralian-denna-unspired.ngrok-free.dev/webhook/config-change" \
             -H "Content-Type: application/json" \
             -d '{
-              "commit_sha": "'$COMMIT_SHA'",
+              "commit_sha": "'"$COMMIT_SHA"'",
               "commit_message": "'"$COMMIT_MSG"'",
-              "author": "'$AUTHOR'",
-              "repository": "${{ github.repository }}",
+              "author": "'"$AUTHOR"'",
+              "repository": "'"${{ github.repository }}"'",
               "files": "'"$FILES"'"
             }'
